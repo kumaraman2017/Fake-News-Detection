@@ -10,6 +10,14 @@
 
 ---
 
+## 📂 Dataset
+
+This project uses the [Fake and Real News Dataset](https://www.kaggle.com/datasets/clmentbisaillon/fake-and-real-news-dataset) from Kaggle.
+
+**Credit:** All dataset rights to Kaggle and the dataset author.
+
+---
+
 ## 📌 Overview
 
 This project uses a trained NLP model to detect fake news with just one click.
