@@ -1,34 +1,43 @@
-# app.py
-
-import streamlit as st
-import pickle
 import os
+import pickle
+from flask import Flask, render_template, request, redirect, url_for, flash
 
-# Load model and vectorizer
-MODEL_PATH = os.path.join("artifacts", "model.pkl")
+app = Flask(__name__)
+app.secret_key = "supersecretkey"  # for flash messages
+
+# paths to your artifacts
+MODEL_PATH      = os.path.join("artifacts", "model.pkl")
 VECTORIZER_PATH = os.path.join("artifacts", "preprocessor.pkl")
 
+# load once at startup
 with open(MODEL_PATH, "rb") as f:
     model = pickle.load(f)
-
 with open(VECTORIZER_PATH, "rb") as f:
     vectorizer = pickle.load(f)
 
-# Streamlit UI
-st.set_page_config(page_title="Fake News Detector", page_icon="📰", layout="centered")
+@app.route("/")
+def home():
+    # renders home.html in /templates folder
+    return render_template("home.html")
 
-st.title("📰 Fake News Detection App")
-st.write("Enter your news text below to check whether it's **Real** or **Fake**.")
+@app.route("/predict", methods=["GET", "POST"])
+def predict():
+    if request.method == "POST":
+        news_text = request.form.get("news_text", "").strip()
+        if not news_text:
+            flash("Please enter some text to classify.", "warning")
+            return redirect(url_for("predict"))
 
-news_text = st.text_area("News Text", height=200)
+        # vectorize and predict
+        X = vectorizer.transform([news_text])
+        pred = model.predict(X)[0]
+        label = "Real News ✅" if pred == 1 else "Fake News ❌"
 
-if st.button("Predict"):
-    if news_text.strip() == "":
-        st.warning("Please enter some text to classify.")
-    else:
-        # Vectorize & predict
-        transformed_text = vectorizer.transform([news_text])
-        pred = model.predict(transformed_text)[0]
-        label = "✅ Real News" if pred == 1 else "❌ Fake News"
+        # render the same index.html with prediction injected
+        return render_template("index.html", prediction=label)
 
-        st.success(f"**Prediction:** {label}")
+    # GET request
+    return render_template("index.html")
+
+if __name__ == "__main__":
+    app.run(debug=True)
