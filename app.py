@@ -21,7 +21,7 @@ def load_artifacts():
 model, vectorizer = load_artifacts()
 
 # -------------------------------
-# Load HTML templates
+# Load HTML templates (static parts)
 # -------------------------------
 
 def load_html_template(filename):
@@ -33,34 +33,44 @@ home_html = load_html_template("home.html")
 index_html = load_html_template("index.html")
 
 # -------------------------------
-# Page configuration
+# Streamlit page configuration
 # -------------------------------
 
-st.set_page_config(page_title="Fake News Detection", page_icon="📰", layout="wide")
+st.set_page_config(
+    page_title="Fake News Detection",
+    page_icon="📰",
+    layout="wide"
+)
 
 # -------------------------------
-# Use session_state for navigation
+# Session state for page navigation
 # -------------------------------
 
-if 'page' not in st.session_state:
+if "page" not in st.session_state:
     st.session_state.page = "Home"
 
-# Sidebar OR in-page navigation
+# Sidebar navigation
 with st.sidebar:
-    st.session_state.page = st.radio("Go to", ["Home", "Predict"], index=["Home", "Predict"].index(st.session_state.page))
+    page_choice = st.radio(
+        "Go to",
+        ["Home", "Predict"],
+        index=["Home", "Predict"].index(st.session_state.page)
+    )
+    st.session_state.page = page_choice
 
 # -------------------------------
 # HOME PAGE
 # -------------------------------
 
 if st.session_state.page == "Home":
+    # Show the static home.html
     components.html(
         home_html,
         height=500,
         scrolling=True
     )
 
-    # Add a Streamlit button to navigate
+    # Streamlit navigation button to go to Predict page
     if st.button("Check News Now"):
         st.session_state.page = "Predict"
         st.experimental_rerun()
@@ -69,25 +79,28 @@ if st.session_state.page == "Home":
 # PREDICT PAGE
 # -------------------------------
 
-else:
+elif st.session_state.page == "Predict":
+    # Render static header from index.html up to <form>
     split_at = index_html.split("<form")[0]
     components.html(split_at, height=200, scrolling=False)
 
+    # Streamlit form for news text input and prediction
     news_text = st.text_area("Enter News Text", height=250)
 
     if st.button("Predict"):
         if not news_text.strip():
-            st.warning("Please enter some text to classify.")
+            st.warning("⚠️ Please enter some text to classify.")
         else:
             X = vectorizer.transform([news_text])
             pred = model.predict(X)[0]
             label = "✅ Real News" if pred == 1 else "❌ Fake News"
 
+            # Display prediction nicely formatted
             st.markdown(
                 f"""
-                <div style="text-align: center; margin-top: 1rem;">
-                  <h4 style="color: var(--text-color);">Prediction Result</h4>
-                  <p style="font-size: 1.5rem; color: var(--text-color);"><strong>{label}</strong></p>
+                <div class="alert alert-info text-center mt-4" role="alert" style="font-size: 1.5rem;">
+                    <h4>Prediction Result</h4>
+                    <p><strong>{label}</strong></p>
                 </div>
                 """,
                 unsafe_allow_html=True
