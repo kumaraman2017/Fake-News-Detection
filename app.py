@@ -1,11 +1,9 @@
-# app.py
-
 import os
 import pickle
 import streamlit as st
 import streamlit.components.v1 as components
 
-# ——— Load Model & Vectorizer ———
+# ——— Load artifacts with cache_resource ———
 MODEL_PATH      = os.path.join("artifacts", "model.pkl")
 VECTORIZER_PATH = os.path.join("artifacts", "preprocessor.pkl")
 
@@ -19,34 +17,38 @@ def load_artifacts():
 
 model, vectorizer = load_artifacts()
 
-# ——— Helpers to read your HTML templates ———
-def load_html_template(filename):
-    path = os.path.join("templates", filename)
-    with open(path, "r", encoding="utf-8") as f:
+# ——— Helpers ———
+def load_html(filename):
+    with open(os.path.join("templates", filename), "r", encoding="utf-8") as f:
         return f.read()
 
-home_html  = load_html_template("home.html")
-index_html = load_html_template("index.html")
+home_html  = load_html("home.html")
+index_html = load_html("index.html")
 
-# ——— Page setup ———
+# ——— Determine current page via query param “page” ———
+params = st.experimental_get_query_params()
+page = params.get("page", ["Home"])[0]  # default to Home
+
+# ——— Render ———
 st.set_page_config(page_title="Fake News Detection", page_icon="📰", layout="wide")
-page = st.sidebar.radio("Go to", ["Home", "Predict"])
 
 if page == "Home":
-    # Embed your home.html (static) inside Streamlit
-    components.html(
-        home_html,
-        height=400,  # adjust to fit
-        scrolling=True
+    # Inject a link that updates the query param to ?page=Predict
+    # Note: Clicking it reloads the app with page="Predict"
+    linked_home = home_html.replace(
+        'href="/predict"',
+        'href="?page=Predict"'
     )
+    components.html(linked_home, height=400, scrolling=True)
 
-else:  # Predict page
-    # First, embed the static portion of index.html up through your <form> tag
-    # We'll strip out the form itself, since Streamlit will render it
-    split_at = index_html.split("<form")[0]  
-    components.html(split_at, height=200, scrolling=False)
+elif page == "Predict":
+    # Embed up to <form> from index.html (static header)
+    prefix = index_html.split("<form")[0]
+    # Also replace form action so it doesn’t try to POST anywhere
+    prefix = prefix.replace('action="/predict"', '')
+    components.html(prefix, height=200, scrolling=False)
 
-    # Now use Streamlit widget in place of the form
+    # Streamlit widget for the text area & predict button
     news_text = st.text_area("Enter News Text", height=250)
     if st.button("Predict"):
         if not news_text.strip():
@@ -54,9 +56,9 @@ else:  # Predict page
         else:
             X = vectorizer.transform([news_text])
             pred = model.predict(X)[0]
-            label = "Real News ✅" if pred == 1 else "Fake News ❌"
-            # Finally, render the “prediction alert” area from your index.html,
-            # substituting {{ prediction }} with the real label:
+            label = "✅ Real News" if pred == 1 else "❌ Fake News"
+
+            # Inject the Bootstrap alert from index.html
             alert_html = f"""
             <div class="alert alert-info text-center mt-4" role="alert">
               <h4 class="alert-heading">Prediction Result</h4>
@@ -64,4 +66,7 @@ else:  # Predict page
             </div>
             """
             components.html(alert_html, height=120)
+
+else:
+    st.error("Unknown page!")
 
