@@ -26,7 +26,7 @@ home_html  = load_html("home.html")
 index_html = load_html("index.html")
 
 # ——— Determine current page via query param “page” ———
-params = st.experimental_get_query_params()
+params = st.query_params()
 page = params.get("page", ["Home"])[0]  # default to Home
 
 # ——— Render ———
