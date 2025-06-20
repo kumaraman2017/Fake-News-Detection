@@ -1,5 +1,3 @@
-# app.py
-
 import os
 import pickle
 import streamlit as st
@@ -40,30 +38,41 @@ index_html = load_html_template("index.html")
 
 st.set_page_config(page_title="Fake News Detection", page_icon="📰", layout="wide")
 
-# Sidebar navigation
-page = st.sidebar.radio("Go to", ["Home", "Predict"])
-
 # -------------------------------
-# Home Page
+# Use session_state for navigation
 # -------------------------------
 
-if page == "Home":
+if 'page' not in st.session_state:
+    st.session_state.page = "Home"
+
+# Sidebar OR in-page navigation
+with st.sidebar:
+    st.session_state.page = st.radio("Go to", ["Home", "Predict"], index=["Home", "Predict"].index(st.session_state.page))
+
+# -------------------------------
+# HOME PAGE
+# -------------------------------
+
+if st.session_state.page == "Home":
     components.html(
         home_html,
         height=500,
         scrolling=True
     )
 
+    # Add a Streamlit button to navigate
+    if st.button("Check News Now"):
+        st.session_state.page = "Predict"
+        st.experimental_rerun()
+
 # -------------------------------
-# Predict Page
+# PREDICT PAGE
 # -------------------------------
 
 else:
-    # Embed the static header portion of index.html
     split_at = index_html.split("<form")[0]
     components.html(split_at, height=200, scrolling=False)
 
-    # Streamlit input form instead of raw HTML form
     news_text = st.text_area("Enter News Text", height=250)
 
     if st.button("Predict"):
@@ -74,7 +83,6 @@ else:
             pred = model.predict(X)[0]
             label = "✅ Real News" if pred == 1 else "❌ Fake News"
 
-            # Show prediction using theme-friendly text color
             st.markdown(
                 f"""
                 <div style="text-align: center; margin-top: 1rem;">
