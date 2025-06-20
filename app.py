@@ -26,15 +26,15 @@ def load_html(filename):
 home_html = load_html("home.html")
 index_html = load_html("index.html")
 
-# ——— Read query param correctly ———
-params = st.experimental_get_query_params()
-page = params.get("page", ["Home"])[0]  # ✅ correct
+# ——— Use modern query param API ———
+params = st.query_params  # ✅ modern version
+page = params.get("page", "Home")  # note: returns string directly
 
 # ——— Page switcher ———
 st.set_page_config(page_title="Fake News Detection", page_icon="📰", layout="wide")
 
 if page == "Home":
-    # Inject query param link to switch page
+    # Replace old href to use query param
     linked_home = home_html.replace(
         'href="/predict"',
         'href="?page=Predict"'
