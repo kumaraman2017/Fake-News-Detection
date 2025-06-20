@@ -9,7 +9,7 @@ import streamlit.components.v1 as components
 MODEL_PATH      = os.path.join("artifacts", "model.pkl")
 VECTORIZER_PATH = os.path.join("artifacts", "preprocessor.pkl")
 
-@st.cache(allow_output_mutation=True)
+@st.cache_resource
 def load_artifacts():
     with open(MODEL_PATH, "rb") as f:
         mdl = pickle.load(f)
