@@ -36,8 +36,7 @@ st.set_page_config(
 if 'page' not in st.session_state:
     st.session_state.page = "Home"
 
-# Sidebar selector
-choice = st.sidebar.radio("Navigate", ["Home", "Predict"])
+choice = st.sidebar.radio("Navigate", ["Home", "Predict"], index=["Home", "Predict"].index(st.session_state.page))
 
 # ----------------------------------------
 # HOME PAGE
@@ -53,7 +52,7 @@ if choice == "Home":
 
     if st.button("Check News Now"):
         st.session_state.page = "Predict"
-        st.experimental_rerun()
+        st.rerun()
 
 # ----------------------------------------
 # PREDICT PAGE
@@ -79,4 +78,4 @@ elif choice == "Predict":
 
     if st.button("Back to Home"):
         st.session_state.page = "Home"
-        st.experimental_rerun()
+        st.rerun()
