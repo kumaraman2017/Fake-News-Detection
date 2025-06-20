@@ -1,71 +1,76 @@
 import os
 import pickle
 import streamlit as st
-import streamlit.components.v1 as components
 
-# -------------------------------
-# Load model & vectorizer
-# -------------------------------
+# ----------------------------------------
+# Load artifacts
+# ----------------------------------------
 
 MODEL_PATH = os.path.join("artifacts", "model.pkl")
 VECTORIZER_PATH = os.path.join("artifacts", "preprocessor.pkl")
 
 @st.cache_resource
-def load_artifacts():
+def load_model_and_vectorizer():
     with open(MODEL_PATH, "rb") as f:
         model = pickle.load(f)
     with open(VECTORIZER_PATH, "rb") as f:
         vectorizer = pickle.load(f)
     return model, vectorizer
 
-model, vectorizer = load_artifacts()
+model, vectorizer = load_model_and_vectorizer()
 
-# -------------------------------
-# Load HTML parts
-# -------------------------------
+# ----------------------------------------
+# Page config
+# ----------------------------------------
 
-def load_html(filename):
-    with open(os.path.join("templates", filename), "r", encoding="utf-8") as f:
-        return f.read()
+st.set_page_config(
+    page_title="Fake News Detection",
+    page_icon="📰",
+    layout="centered",
+)
 
-home_html = load_html("home.html")
-index_html = load_html("index.html")
+# ----------------------------------------
+# Sidebar navigation
+# ----------------------------------------
 
-# -------------------------------
-# Streamlit configuration
-# -------------------------------
+if 'page' not in st.session_state:
+    st.session_state.page = "Home"
 
-st.set_page_config(page_title="Fake News Detector", page_icon="📰", layout="centered")
+# Sidebar selector
+choice = st.sidebar.radio("Navigate", ["Home", "Predict"])
 
-# -------------------------------
-# Page selection in sidebar
-# -------------------------------
-
-page = st.sidebar.radio("Go to", ["Home", "Predict"])
-
-# -------------------------------
+# ----------------------------------------
 # HOME PAGE
-# -------------------------------
+# ----------------------------------------
 
-if page == "Home":
-    components.html(home_html, height=500, scrolling=False)
+if choice == "Home":
+    st.markdown("""
+        <div style='text-align: center;'>
+            <h1>🚀 Fake News Detection</h1>
+            <p>Check if a news article is Real or Fake using Machine Learning.</p>
+        </div>
+    """, unsafe_allow_html=True)
 
     if st.button("Check News Now"):
-        st.session_state['GoTo'] = "Predict"
+        st.session_state.page = "Predict"
         st.experimental_rerun()
 
-# -------------------------------
+# ----------------------------------------
 # PREDICT PAGE
-# -------------------------------
+# ----------------------------------------
 
-else:
-    components.html(index_html, height=120, scrolling=False)
+elif choice == "Predict":
+    st.markdown("""
+        <div style='text-align: center;'>
+            <h1>📰 Fake News Predictor</h1>
+        </div>
+    """, unsafe_allow_html=True)
 
-    news_text = st.text_area("Enter News Text", height=200)
+    news_text = st.text_area("Enter News Text Below:", height=200)
 
     if st.button("Predict"):
         if not news_text.strip():
-            st.warning("Please enter some text.")
+            st.warning("Please enter some text to classify.")
         else:
             X = vectorizer.transform([news_text])
             pred = model.predict(X)[0]
@@ -73,15 +78,5 @@ else:
             st.success(f"**Prediction:** {label}")
 
     if st.button("Back to Home"):
-        st.session_state['GoTo'] = "Home"
-        st.experimental_rerun()
-
-# -------------------------------
-# Optional: handle jump via session_state
-# -------------------------------
-
-if 'GoTo' in st.session_state:
-    if st.session_state['GoTo'] != page:
-        page = st.session_state['GoTo']
-        st.session_state.pop('GoTo')
+        st.session_state.page = "Home"
         st.experimental_rerun()
