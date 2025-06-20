@@ -1,9 +1,14 @@
+# app.py
+
 import os
 import pickle
 import streamlit as st
 import streamlit.components.v1 as components
 
-# ——— Load model & vectorizer ———
+# -------------------------------
+# Load model & vectorizer (cached)
+# -------------------------------
+
 MODEL_PATH = os.path.join("artifacts", "model.pkl")
 VECTORIZER_PATH = os.path.join("artifacts", "preprocessor.pkl")
 
@@ -17,50 +22,65 @@ def load_artifacts():
 
 model, vectorizer = load_artifacts()
 
-# ——— Load HTML templates ———
-def load_html(filename):
+# -------------------------------
+# Load HTML templates
+# -------------------------------
+
+def load_html_template(filename):
     path = os.path.join("templates", filename)
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
 
-home_html = load_html("home.html")
-index_html = load_html("index.html")
+home_html = load_html_template("home.html")
+index_html = load_html_template("index.html")
 
-# ——— Use modern query param API ———
-params = st.query_params  # ✅ modern version
-page = params.get("page", "Home")  # note: returns string directly
+# -------------------------------
+# Page configuration
+# -------------------------------
 
-# ——— Page switcher ———
 st.set_page_config(page_title="Fake News Detection", page_icon="📰", layout="wide")
 
+# Sidebar navigation
+page = st.sidebar.radio("Go to", ["Home", "Predict"])
+
+# -------------------------------
+# Home Page
+# -------------------------------
+
 if page == "Home":
-    # Replace old href to use query param
-    linked_home = home_html.replace(
-        'href="/predict"',
-        'href="?page=Predict"'
+    components.html(
+        home_html,
+        height=500,
+        scrolling=True
     )
-    components.html(linked_home, height=400, scrolling=True)
 
-elif page == "Predict":
-    prefix = index_html.split("<form")[0]
-    prefix = prefix.replace('action="/predict"', '')
-    components.html(prefix, height=200, scrolling=False)
+# -------------------------------
+# Predict Page
+# -------------------------------
 
+else:
+    # Embed the static header portion of index.html
+    split_at = index_html.split("<form")[0]
+    components.html(split_at, height=200, scrolling=False)
+
+    # Streamlit input form instead of raw HTML form
     news_text = st.text_area("Enter News Text", height=250)
+
     if st.button("Predict"):
         if not news_text.strip():
-            st.warning("Please enter some text.")
+            st.warning("Please enter some text to classify.")
         else:
             X = vectorizer.transform([news_text])
             pred = model.predict(X)[0]
             label = "✅ Real News" if pred == 1 else "❌ Fake News"
-            alert_html = f"""
-            <div class="alert alert-info text-center mt-4" role="alert">
-              <h4 class="alert-heading">Prediction Result</h4>
-              <p class="mb-0"><strong>{label}</strong></p>
-            </div>
-            """
-            components.html(alert_html, height=120)
 
-else:
-    st.error("Unknown page.")
+            # Show prediction using theme-friendly text color
+            st.markdown(
+                f"""
+                <div style="text-align: center; margin-top: 1rem;">
+                  <h4 style="color: var(--text-color);">Prediction Result</h4>
+                  <p style="font-size: 1.5rem; color: var(--text-color);"><strong>{label}</strong></p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
